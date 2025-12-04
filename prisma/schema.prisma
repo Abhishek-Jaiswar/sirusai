@@ -6,9 +6,39 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  output   = "./generated"
 }
 
 datasource db {
   provider = "postgresql"
 }
+
+
+model CandidateProfile {
+    id              String   @id
+    userId          String   @unique
+    primaryRole     String
+    experienceYears Int
+    techStack       String[]
+    targetLevel     String
+    location        String?
+    resumeUrl       String?
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime
+    User            User     @relation(fields: [userId], references: [id])
+  }
+  
+  model User {
+    id               String            @id
+    clerkId          String            @unique
+    email            String            @unique
+    name             String?
+    role             UserRole          @default(CANDIDATE)
+    CandidateProfile CandidateProfile?
+  }
+  
+  enum UserRole {
+    CANDIDATE
+    RECRUITER
+    ADMIN
+  }

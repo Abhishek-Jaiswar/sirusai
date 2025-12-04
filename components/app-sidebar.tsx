@@ -184,3 +184,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
+
+// DATABASE_URL="postgresql://neondb_owner:npg_Glth3iFUxpT6@ep-frosty-thunder-add4mjka-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+// # uncomment next line if you use Prisma <5.10
+// # DATABASE_URL_UNPOOLED="postgresql://neondb_owner:npg_Glth3iFUxpT6@ep-frosty-thunder-add4mjka.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
