@@ -15,12 +15,20 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UserButton } from "@clerk/nextjs";
+import checkProfileSetup from "../actions/profileSetup";
+import { ProfileSetupBanner } from "@/components/profile-setup-banner";
+import { currentUser } from "@clerk/nextjs/server";
 
-export default function DashbordLayout({
+export default async function DashbordLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { needsProfile } = await checkProfileSetup();
+  const user = await currentUser();
+
+  const displayName =
+    user?.firstName ?? user?.primaryEmailAddress?.emailAddress ?? "there";
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -46,9 +54,14 @@ export default function DashbordLayout({
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-            <UserButton />
+          <UserButton />
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          {needsProfile && (
+            <ProfileSetupBanner defaultOpen={true} name={displayName} />
+          )}
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
