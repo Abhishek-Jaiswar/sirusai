@@ -11,7 +11,7 @@ export default async function Header() {
 
   return (
     <div className="w-screen h-16 flex items-center border-b border-border">
-      <div className=" container max-w-8xl mx-auto flex items-center justify-between">
+      <div className=" container max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SunSnowIcon className="size-8 dark:text-green-400 text-green-500" />
           <h2 className="text-lg dark:text-green-50 text-green-950 font-bold">Sirus</h2>

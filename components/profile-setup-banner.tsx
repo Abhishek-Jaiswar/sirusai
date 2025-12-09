@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -10,16 +14,27 @@ import {
 } from "./ui/dialog";
 
 type ProfileSetupDialogProps = {
-  defaultOpen: boolean;
   name: string;
 };
 
-export async function ProfileSetupBanner({
-  defaultOpen,
-  name,
-}: ProfileSetupDialogProps) {
+export function ProfileSetupBanner({ name }: ProfileSetupDialogProps) {
+  const pathname = usePathname();
+  const isProfileSetupPage = pathname === "/dashboard/candidate/profile/setup";
+
+  const [hasClosed, setHasClosed] = useState(false);
+  const open = !isProfileSetupPage && !hasClosed;
+
+  if (isProfileSetupPage) return null;
+
   return (
-    <Dialog defaultOpen={defaultOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          setHasClosed(true);
+        }
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
@@ -46,7 +61,9 @@ export async function ProfileSetupBanner({
             <Link href="/dashboard">Skip for now</Link>
           </Button>
           <Button asChild>
-            <Link href="/candidate/profile/setup">Complete profile</Link>
+            <Link href="/dashboard/candidate/profile/setup">
+              Complete profile
+            </Link>
           </Button>
         </DialogFooter>
       </DialogContent>

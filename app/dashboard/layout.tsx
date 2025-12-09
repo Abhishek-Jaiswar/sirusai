@@ -29,6 +29,7 @@ export default async function DashbordLayout({
 
   const displayName =
     user?.firstName ?? user?.primaryEmailAddress?.emailAddress ?? "there";
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -58,7 +59,9 @@ export default async function DashbordLayout({
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">
           {needsProfile && (
-            <ProfileSetupBanner defaultOpen={true} name={displayName} />
+            <ProfileSetupBanner
+              name={displayName}
+            />
           )}
           {children}
         </div>
