@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -41,11 +42,27 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
 
     const [resume, setResume] = useState<File | null>(null);
 
-    const [isLoading, setIsLoading] = useState(false);
 
     const [techStackInput, setTechStackInput] = useState(
         initialData?.CandidateProfile?.techStack?.join(", ") || ""
     );
+
+    const mutation = useMutation({
+        mutationFn: updateCandidateProfile,
+        onSuccess: (data) => {
+            if (data.success) {
+                console.log("Profile updated!");
+                // Add toast or redirect here
+            } else {
+                console.error(data.error);
+            }
+        },
+        onError: (error) => {
+            console.error("Submission failed", error);
+        }
+    });
+
+    const isLoading = mutation.isPending;
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
@@ -73,7 +90,6 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
     }, [bannerPreview, avatarPreview]);
 
     const onSubmit = async (values: ProfileFormValues) => {
-        setIsLoading(true);
         const formData = new FormData();
 
         // Append text fields
@@ -90,19 +106,7 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
         if (avatar) formData.append("avatar", avatar);
         if (resume) formData.append("resume", resume);
 
-        try {
-            const result = await updateCandidateProfile(formData);
-            if (result.success) {
-                console.log("Profile updated!", values);
-                // Maybe redirect or show toast
-            } else {
-                console.error(result.error);
-            }
-        } catch (error) {
-            console.error("Submission failed", error);
-        } finally {
-            setIsLoading(false);
-        }
+        mutation.mutate(formData);
     };
 
     return (
