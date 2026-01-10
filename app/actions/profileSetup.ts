@@ -1,8 +1,11 @@
+'use server'
+
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
 export default async function checkProfileSetup() {
   const { userId } = await auth();
+  
   if (!userId) return { needsProfile: false };
 
   const user = await prisma.user.findUnique({

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { QueryProvider } from "@/lib/query-provider";
+import SyncUser from "@/components/sync-user";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
+              <SyncUser />
               {children}
             </ThemeProvider>
           </QueryProvider>
