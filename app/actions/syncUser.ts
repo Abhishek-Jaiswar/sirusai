@@ -1,6 +1,8 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
@@ -8,8 +10,8 @@ export async function syncCurrentUserToDb() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const existingUser = await prisma.user.findFirst({
-    where: { clerkId: userId },
+  const existingUser = await db.query.users.findFirst({
+    where: eq(users.clerkId, userId),
   });
 
   if (existingUser) return existingUser;
@@ -21,14 +23,13 @@ export async function syncCurrentUserToDb() {
     (e) => e.id === clerkUser.primaryEmailAddressId
   )?.emailAddress;
 
-  const user = await prisma.user.create({
-    data: {
-      clerkId: clerkUser.id,
-      email: primaryEmail ?? "",
-      name: clerkUser.fullName ?? "",
-    },
-  });
+  const user = await db.insert(users).values({
+    id: clerkUser.id, // Using clerk ID as internal ID or generate one
+    clerkId: clerkUser.id,
+    email: primaryEmail ?? "",
+    name: clerkUser.fullName ?? "",
+  }).returning();
 
   revalidatePath("/");
-  return user;
+  return user[0];
 }

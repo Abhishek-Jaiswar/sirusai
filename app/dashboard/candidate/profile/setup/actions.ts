@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { profileSchema } from "./form-schema";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { users, candidateProfiles } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
 import { cloudinary } from "@/lib/cloudinary";
@@ -58,9 +60,9 @@ export async function updateCandidateProfile(formData: FormData) {
   const { name, primaryRole, experienceYears, targetLevel, location, techStack, bio } = validatedFields.data;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      include: { CandidateProfile: true }
+    const user = await db.query.users.findFirst({
+      where: eq(users.clerkId, clerkId),
+      with: { candidateProfile: true }
     });
 
     if (!user) {
@@ -69,7 +71,7 @@ export async function updateCandidateProfile(formData: FormData) {
 
     let bannerUrl = user.profileBanner;
     let avatarUrl = user.avatar;
-    let resumeUrl = user.CandidateProfile?.resumeUrl;
+    let resumeUrl = user.candidateProfile?.resumeUrl;
 
     // Parallel uploads
     const uploadPromises = [];
@@ -85,34 +87,35 @@ export async function updateCandidateProfile(formData: FormData) {
 
     await Promise.all(uploadPromises);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        name,
-        bio,
-        profileBanner: bannerUrl,
-        avatar: avatarUrl,
-        CandidateProfile: {
-          upsert: {
-            create: {
-              primaryRole,
-              experienceYears,
-              targetLevel: targetLevel as any,
-              location,
-              techStack,
-              resumeUrl,
-            },
-            update: {
-              primaryRole,
-              experienceYears,
-              targetLevel: targetLevel as any,
-              location,
-              techStack,
-              resumeUrl,
-            },
-          },
-        },
-      },
+    await db.update(users).set({
+      name,
+      bio,
+      profileBanner: bannerUrl,
+      avatar: avatarUrl,
+      updatedAt: new Date(),
+    }).where(eq(users.id, user.id));
+
+    await db.insert(candidateProfiles).values({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      primaryRole,
+      experienceYears,
+      targetLevel: targetLevel as any,
+      location,
+      techStack,
+      resumeUrl,
+      updatedAt: new Date(),
+    }).onConflictDoUpdate({
+      target: candidateProfiles.userId,
+      set: {
+        primaryRole,
+        experienceYears,
+        targetLevel: targetLevel as any,
+        location,
+        techStack,
+        resumeUrl,
+        updatedAt: new Date(),
+      }
     });
 
     revalidatePath("/dashboard/candidate/profile");

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Form,
@@ -24,16 +25,39 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import UploadCard from "@/components/upload-card";
 import { profileSchema, type ProfileFormValues } from "./form-schema";
-import { Briefcase, MapPin, Sparkles, User as UserIcon, Loader2 } from "lucide-react";
+import { Briefcase, MapPin, Sparkles, User as UserIcon, Loader2, PartyPopper } from "lucide-react";
 import { updateCandidateProfile } from "./actions";
 
 interface ProfileSetupFormProps {
-    initialData: any; // Using any for now to simplify, ideally we use a shared type
+    initialData: {
+        name: string | null;
+        email: string;
+        avatar: string | null;
+        profileBanner: string | null;
+        bio: string | null;
+        candidateProfile: {
+            primaryRole: string;
+            experienceYears: number;
+            targetLevel: "Junior" | "Mid" | "Senior" | "Lead";
+            location: string | null;
+            techStack: string[];
+            resumeUrl: string | null;
+        } | null;
+    };
 }
 
 export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps) {
+    const router = useRouter();
+    const [isSuccessOpen, setIsSuccessOpen] = useState(false);
     const [banner, setBanner] = useState<File | null>(null);
     const [bannerPreview, setBannerPreview] = useState<string | null>(initialData?.profileBanner || null);
 
@@ -44,20 +68,19 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
 
 
     const [techStackInput, setTechStackInput] = useState(
-        initialData?.CandidateProfile?.techStack?.join(", ") || ""
+        initialData?.candidateProfile?.techStack?.join(", ") || ""
     );
 
     const mutation = useMutation({
         mutationFn: updateCandidateProfile,
-        onSuccess: (data) => {
+        onSuccess: (data: { success?: string; error?: string }) => {
             if (data.success) {
-                console.log("Profile updated!");
-                // Add toast or redirect here
+                setIsSuccessOpen(true);
             } else {
                 console.error(data.error);
             }
         },
-        onError: (error) => {
+        onError: (error: Error) => {
             console.error("Submission failed", error);
         }
     });
@@ -68,12 +91,12 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
         resolver: zodResolver(profileSchema),
         defaultValues: {
             name: initialData?.name || "",
-            primaryRole: initialData?.CandidateProfile?.primaryRole || "",
-            experienceYears: initialData?.CandidateProfile?.experienceYears || 0,
-            targetLevel: (initialData?.CandidateProfile?.targetLevel as any) || "Mid",
-            location: initialData?.CandidateProfile?.location || "",
-            techStack: initialData?.CandidateProfile?.techStack || [],
-            bio: "", // Bio is not in the schema yet, placeholder
+            primaryRole: initialData?.candidateProfile?.primaryRole || "",
+            experienceYears: initialData?.candidateProfile?.experienceYears || 0,
+            targetLevel: (initialData?.candidateProfile?.targetLevel as any) || "Mid",
+            location: initialData?.candidateProfile?.location || "",
+            techStack: initialData?.candidateProfile?.techStack || [],
+            bio: initialData?.bio || "",
         },
     });
 
@@ -114,15 +137,15 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {/* Media Section */}
-                    <Card className="md:col-span-3">
+                    <Card className="md:col-span-3 overflow-visible">
                         <CardHeader>
                             <CardTitle>Profile Media</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-4">
-                                <label className="text-sm font-medium">Profile Banner</label>
+                        <CardContent className="space-y-6 pt-0">
+                            <div className=" grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Banner Upload */}
                                 <UploadCard
-                                    label="Banner Image"
+                                    label="Profile Banner"
                                     description="Upload a high-quality banner for your profile (max 5MB)"
                                     aspect="banner"
                                     preview={bannerPreview}
@@ -136,27 +159,23 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
                                         setBannerPreview(null);
                                     }}
                                 />
-                            </div>
 
-                            <div className="space-y-4">
-                                <label className="text-sm font-medium">Avatar</label>
-                                <div className="w-40">
-                                    <UploadCard
-                                        label="Avatar Image"
-                                        description="Your professional photo"
-                                        aspect="avatar"
-                                        preview={avatarPreview}
-                                        file={avatar}
-                                        onFileSelect={(file) => {
-                                            setAvatar(file);
-                                            setAvatarPreview(URL.createObjectURL(file));
-                                        }}
-                                        onClear={() => {
-                                            setAvatar(null);
-                                            setAvatarPreview(null);
-                                        }}
-                                    />
-                                </div>
+                                {/* Avatar Upload - Overlapping Banner */}
+                                <UploadCard
+                                    label="Profile Avatar"
+                                    description="Upload a high-quality avatar for your profile (max 5MB)"
+                                    aspect="avatar"
+                                    preview={avatarPreview}
+                                    file={avatar}
+                                    onFileSelect={(file) => {
+                                        setAvatar(file);
+                                        setAvatarPreview(URL.createObjectURL(file));
+                                    }}
+                                    onClear={() => {
+                                        setAvatar(null);
+                                        setAvatarPreview(null);
+                                    }}
+                                />
                             </div>
                         </CardContent>
                     </Card>
@@ -257,7 +276,7 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
                                             <Input
                                                 type="number"
                                                 {...field}
-                                                onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.valueAsNumber || 0)}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -313,12 +332,12 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
                                             <Input
                                                 placeholder="React, Next.js, TypeScript, Node.js"
                                                 value={techStackInput}
-                                                onChange={(e) => {
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                     const val = e.target.value;
                                                     setTechStackInput(val);
                                                     // Only update the form state with actual values
                                                     const array = val.split(",")
-                                                        .map((s) => s.trim())
+                                                        .map((s: string) => s.trim())
                                                         .filter(Boolean);
                                                     field.onChange(array);
                                                 }}
@@ -348,7 +367,7 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
                                 <Input
                                     type="file"
                                     accept=".pdf,.doc,.docx"
-                                    onChange={(e) => {
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                         const file = e.target.files?.[0];
                                         if (file) setResume(file);
                                     }}
@@ -384,6 +403,36 @@ export default function ProfileSetupForm({ initialData }: ProfileSetupFormProps)
                     </Button>
                 </div>
             </form>
+
+            <Dialog open={isSuccessOpen} onOpenChange={(open) => {
+                if (!open) router.push("/dashboard/candidate/profile");
+                setIsSuccessOpen(open);
+            }}>
+                <DialogContent className="sm:max-w-md border-none bg-background/80 backdrop-blur-xl shadow-2xl">
+                    <DialogHeader className="flex flex-col items-center justify-center space-y-4 py-6">
+                        <div className="h-20 w-20 bg-green-500/10 rounded-full flex items-center justify-center animate-bounce">
+                            <PartyPopper className="h-10 w-10 text-green-500" />
+                        </div>
+                        <DialogTitle className="text-3xl font-bold bg-linear-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+                            Congratulations!
+                        </DialogTitle>
+                        <DialogDescription className="text-center text-lg text-muted-foreground">
+                            Your professional profile has been successfully updated. Recruiters can now discover your amazing skills!
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-3 pb-4">
+                        <Button
+                            className="w-full bg-linear-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-6 text-lg transition-all hover:scale-[1.02]"
+                            onClick={() => router.push("/dashboard/candidate/profile")}
+                        >
+                            View My Profile
+                        </Button>
+                        <p className="text-center text-xs text-muted-foreground animate-pulse">
+                            Redirecting you in a few seconds...
+                        </p>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Form>
     );
 }

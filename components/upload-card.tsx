@@ -52,8 +52,8 @@ function UploadCard({
 
   return (
     <section className="space-y-2">
-      <Label className="dark:text-neutral-200">{label}</Label>
-      <p className="text-xs text-neutral-500">{description}</p>
+      {label && <Label className="dark:text-neutral-200">{label}</Label>}
+      {description && <p className="text-xs text-neutral-500">{description}</p>}
 
       <Card
         tabIndex={0}

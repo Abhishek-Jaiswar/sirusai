@@ -1,4 +1,6 @@
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { users, candidateProfiles } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
 export const getCurrentUserData = async () => {
@@ -9,10 +11,10 @@ export const getCurrentUserData = async () => {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-      include: {
-        CandidateProfile: true,
+    const user = await db.query.users.findFirst({
+      where: eq(users.clerkId, userId),
+      with: {
+        candidateProfile: true,
       },
     });
     return user;
